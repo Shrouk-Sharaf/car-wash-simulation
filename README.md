@@ -6,11 +6,11 @@ This project implements a classic **Producer-Consumer Problem** in Java, simulat
 
 | Team Member | Main Role | Responsibilities |
 |-------------|-----------|------------------|
-| Student 1 | ServiceStation | Main class setup, resource initialization, thread management |
-| Student 2 | Semaphore Class | Custom semaphore implementation with synchronization |
-| Student 3 | Car Class (Producer) | Car arrival logic, queue entry, semaphore acquisition |
-| Student 4 | Pump Class (Consumer) | Service logic, car processing, resource release |
-| Student 5 | Support & Logging | Queue validation, message logging, simulation timing |
+| Shahd | ServiceStation | Main class setup, resource initialization, thread management |
+| Kenzy | Semaphore Class | Custom semaphore implementation with synchronization |
+| Gaeza | Car Class (Producer) | Car arrival logic, queue entry, semaphore acquisition |
+| Amina | Pump Class (Consumer) | Service logic, car processing, resource release |
+| Shrouq| Support & Logging | Queue validation, message logging, simulation timing |
 
 ## Technical Implementation
 
