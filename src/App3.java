@@ -2,7 +2,6 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Scanner;
 
-
 class Semaphore {
     private int value;
     public Semaphore(int value) {
@@ -45,18 +44,17 @@ class Car extends Thread {
 
     public void run(){
         try {
-            System.out.println("Car"+id+" arrived");
-            
-            if (queue.size() >= 10) {
-                System.out.println("Car"+id+" left - queue full!");
-                return;
-            }
+            System.out.println("C" + id + " arrived");
             
             empty.waitSemaphore();
             mutex.waitSemaphore();
             
             queue.add(this);
-            System.out.println("Car"+id+" entered queue. Position: " + queue.size());
+            if (queue.size() == 1) {
+                System.out.println("C" + id + " entered queue");
+            } else {
+                System.out.println("C" + id + " arrived and waiting");
+            }
             
             mutex.signal();
             full.signal();
@@ -92,26 +90,29 @@ class Pump extends Thread {
                 mutex.waitSemaphore();
 
                 Car car = carQueue.poll();
-                System.out.println("Queue now has " + carQueue.size() + " cars waiting");
                 
-                System.out.println("Pump " + id + ": Car " + car.getCarId() + " begins service");
+                System.out.println("Pump " + id + ": C" + car.getCarId() + " Occupied");
+                System.out.println("Pump " + id + ": C" + car.getCarId() + " login");
+                System.out.println("Pump " + id + ": C" + car.getCarId() + " begins service at Bay " + id);
+                
                 mutex.signal();
                 availableAreas.signal();
                 
                 int serviceTime = (int)(Math.random() * 3000 + 2000);
-                System.out.println("Pump " + id + ": Service time " + (serviceTime/1000) + "s");
                 Thread.sleep(serviceTime);
 
-                System.out.println("Pump " + id + ": Car " + car.getCarId() + " finishes service");
+                System.out.println("Pump " + id + ": C" + car.getCarId() + " finishes service");
+                System.out.println("Pump " + id + ": Bay " + id + " is now free");
                 availablePumps.signal();
                 
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 e.printStackTrace();
+                break; 
             }
         }
     }
 }
-
 
 class ServiceStation {
     public Queue<Car> carQueue;
@@ -139,16 +140,21 @@ class ServiceStation {
         availableAreas = new Semaphore(queueSize);
         waitingCars = new Semaphore(0);
         availablePumps = new Semaphore(numPumps);
+        
+        System.out.println("Service Station initialized with " + numPumps + " pumps and queue size " + queueSize);
     }
 
     public void startSimulation() {
+        System.out.println("Simulation starting...");
+        
         for (int i = 1; i <= numPumps; i++) {
             Pump pump = new Pump(i, carQueue, mutex, availableAreas, waitingCars, availablePumps);
             pump.start();
         }
         
         int carId = 1;
-        for (int i = 1; i <= 30; i++) {
+        int totalCars = 10;
+        for (int i = 1; i <= totalCars; i++) {
             Car car = new Car(carId++, carQueue, availableAreas, waitingCars, mutex);
             car.start();
             try {
@@ -156,6 +162,14 @@ class ServiceStation {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+        }
+        
+        try {
+            Thread.sleep(15000);
+            System.out.println("All cars processed; simulation ends");
+        }
+        catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 }
