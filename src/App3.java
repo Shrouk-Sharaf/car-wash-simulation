@@ -4,6 +4,7 @@ import java.util.Scanner;
 
 class Semaphore {
     private int value;
+
     public Semaphore(int value) {
         this.value = value;
     }
@@ -13,7 +14,8 @@ class Semaphore {
             try {
                 wait();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Thread.currentThread().interrupt();
+                return;
             }
         }
         value--;
@@ -21,7 +23,11 @@ class Semaphore {
     
     public synchronized void signal() {
         value++;    
-        notify();     
+        notify();
+    }
+
+    public synchronized int availablePermits() {
+        return value;
     }
 }
 
@@ -44,9 +50,9 @@ class Car extends Thread {
 
     public void run(){
         try {
-            System.out.println("C" + id + " arrived");
+            System.out.println(" C" + id + " arrived");
             
-            empty.waitSemaphore();
+            empty.waitSemaphore(); 
             mutex.waitSemaphore();
             
             queue.add(this);
@@ -72,7 +78,7 @@ class Pump extends Thread {
     private Semaphore availableAreas;
     private Semaphore waitingCars;
     private Semaphore availablePumps;
-    
+    private volatile boolean running = true;
     public Pump(int id, Queue<Car> carQueue, Semaphore mutex, Semaphore availableAreas, Semaphore waitingCars, Semaphore availablePumps) {
         this.id = id;
         this.carQueue = carQueue;
@@ -81,23 +87,33 @@ class Pump extends Thread {
         this.waitingCars = waitingCars;
         this.availablePumps = availablePumps;
     }
+
+    public void stopPump() {
+        running = false;
+        this.interrupt();
+    }
     
     public void run() {
-        while (true) {
+        while (running) {
             try {
                 waitingCars.waitSemaphore();
                 availablePumps.waitSemaphore();
                 mutex.waitSemaphore();
 
                 Car car = carQueue.poll();
-                
+
+                if (car == null) {
+                    mutex.signal();
+                    availablePumps.signal();
+                    continue;
+                }
+
                 System.out.println("Pump " + id + ": C" + car.getCarId() + " Occupied");
                 System.out.println("Pump " + id + ": C" + car.getCarId() + " login");
                 System.out.println("Pump " + id + ": C" + car.getCarId() + " begins service at Bay " + id);
                 
                 mutex.signal();
                 availableAreas.signal();
-                
                 int serviceTime = (int)(Math.random() * 3000 + 2000);
                 Thread.sleep(serviceTime);
 
@@ -105,10 +121,8 @@ class Pump extends Thread {
                 System.out.println("Pump " + id + ": Bay " + id + " is now free");
                 availablePumps.signal();
                 
-            }
-            catch (InterruptedException e) {
-                e.printStackTrace();
-                break; 
+            } catch (InterruptedException e) {
+                if (!running) break;
             }
         }
     }
@@ -122,7 +136,7 @@ class ServiceStation {
     public Semaphore waitingCars;
     public Semaphore availablePumps; 
     private final int numPumps;
-
+    private Pump[] pumps;
     public ServiceStation(int numPumps, int queueSize) {
         if (numPumps < 1 || numPumps > 10) {
             System.out.println("Error: Number of pumps must be between 1 and 10. Using default: 3");
@@ -140,6 +154,7 @@ class ServiceStation {
         availableAreas = new Semaphore(queueSize);
         waitingCars = new Semaphore(0);
         availablePumps = new Semaphore(numPumps);
+        pumps = new Pump[numPumps];
         
         System.out.println("Service Station initialized with " + numPumps + " pumps and queue size " + queueSize);
     }
@@ -147,35 +162,64 @@ class ServiceStation {
     public void startSimulation(int numCars) {
         System.out.println("Simulation starting...");
         
-        for (int i = 1; i <= numPumps; i++) {
-            Pump pump = new Pump(i, carQueue, mutex, availableAreas, waitingCars, availablePumps);
-            pump.start();
+
+        for (int i = 0; i < numPumps; i++) {
+            pumps[i] = new Pump(i + 1, carQueue, mutex, availableAreas, waitingCars, availablePumps);
+            pumps[i].start();
         }
         
+
         int carId = 1;
-        int totalCars = 10;
-        for (int i = 1; i <= numCars; i++) {
+        for (int i = 0; i < numCars; i++) {
             Car car = new Car(carId++, carQueue, availableAreas, waitingCars, mutex);
             car.start();
             try {
                 Thread.sleep((int)(Math.random() * 2000 + 1000));
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Thread.currentThread().interrupt();
             }
         }
+
         
-        try {
-            Thread.sleep(15000);
-            System.out.println("All cars processed; simulation ends");
+        waitForCompletion(numCars);
+
+
+        stopAllPumps();
+
+        System.out.println(" All cars processed; simulation ends");
+    }
+
+
+    private void waitForCompletion(int totalCars) {
+        while (true) {
+            try {
+                Thread.sleep(1000);
+                mutex.waitSemaphore();
+                boolean queueEmpty = carQueue.isEmpty();
+                mutex.signal();
+
+                boolean allPumpsAvailable = (availablePumps.availablePermits() == numPumps);
+
+                if (queueEmpty && allPumpsAvailable) {
+                    break;
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
         }
-        catch (InterruptedException e) {
-            e.printStackTrace();
+    }
+
+
+    private void stopAllPumps() {
+        for (Pump pump : pumps) {
+            pump.stopPump();
         }
     }
 }
 
-class App3 {
-   public static void main(String[] args) {
+public class App3 {
+    public static void main(String[] args) {
         Scanner input = new Scanner(System.in);
         
         System.out.print("Enter number of pumps (1-10): ");
