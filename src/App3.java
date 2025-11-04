@@ -144,7 +144,7 @@ class ServiceStation {
         System.out.println("Service Station initialized with " + numPumps + " pumps and queue size " + queueSize);
     }
 
-    public void startSimulation() {
+    public void startSimulation(int numCars) {
         System.out.println("Simulation starting...");
         
         for (int i = 1; i <= numPumps; i++) {
@@ -154,7 +154,7 @@ class ServiceStation {
         
         int carId = 1;
         int totalCars = 10;
-        for (int i = 1; i <= totalCars; i++) {
+        for (int i = 1; i <= numCars; i++) {
             Car car = new Car(carId++, carQueue, availableAreas, waitingCars, mutex);
             car.start();
             try {
@@ -175,11 +175,21 @@ class ServiceStation {
 }
 
 class App3 {
-    public static void main(String[] args) {
-        int pumps = 2;      
-        int queueSize = 5;  
+   public static void main(String[] args) {
+        Scanner input = new Scanner(System.in);
+        
+        System.out.print("Enter number of pumps (1-10): ");
+        int pumps = input.nextInt();
+
+        System.out.print("Enter queue size (1-10): ");
+        int queueSize = input.nextInt();
+
+        System.out.print("Enter number of cars: ");
+        int numCars = input.nextInt();
 
         ServiceStation station = new ServiceStation(pumps, queueSize);
-        station.startSimulation();
+        station.startSimulation(numCars); 
+
+        input.close();
     }
 }
