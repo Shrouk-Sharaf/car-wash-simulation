@@ -83,31 +83,31 @@ class Pump extends Thread {
     public void run() {
         while (true) {
             try {
-                waitingCars.waitSemaphore();
-                mutex.waitSemaphore();
-                availablePumps.waitSemaphore();
-                
-                Car car = carQueue.poll();
-                System.out.println("Pump " + id + ": Car " + car.getCarId() + " Occupied");
-                System.out.println("Pump " + id + ": Car " + car.getCarId() + " begins service at Bay " + id);
-                
-                mutex.signal();
-                availableAreas.signal();
-                
-                int serviceTime = (int)(Math.random() * 3000 + 2000);
+                // waiting for a car
+               waitingCars.waitSemaphore(); 
+               // checking if the um is emty
+               availablePumps.waitSemaphore();
+               //lock queue
+               mutex.waitSemaphore();
+
+               Car car = carQueue.poll();
+               System.out.println("Pump " + id + ": Car " + car.getCarId() + " begins service at Bay " + id);
+               
+               mutex.signal();
+               availableAreas.signal();
+               int serviceTime = (int)(Math.random() * 3000 + 2000); 
                 Thread.sleep(serviceTime);
 
                 System.out.println("Pump " + id + ": Car " + car.getCarId() + " finishes service");
                 System.out.println("Pump " + id + ": Bay " + id + " is now free");
-                
                 availablePumps.signal();
-                
-            } catch (InterruptedException e) {
+                } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        }
     }
 }
+    }
+
 
 class ServiceStation {
     public Queue<Car> carQueue;
@@ -158,17 +158,10 @@ class ServiceStation {
 
 class App3 {
     public static void main(String[] args) {
-        Scanner input = new Scanner(System.in);
-        
-        System.out.print("Enter number of pumps (1-10): ");
-        int pumps = input.nextInt();
-
-        System.out.print("Enter queue size (1-10): ");
-        int queueSize = input.nextInt();
+        int pumps = 2;      
+        int queueSize = 5;  
 
         ServiceStation station = new ServiceStation(pumps, queueSize);
         station.startSimulation();
-
-        input.close();
     }
 }
