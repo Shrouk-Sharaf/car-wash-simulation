@@ -46,17 +46,21 @@ class Car extends Thread {
     public void run(){
         try {
             System.out.println("Car"+id+" arrived");
-            //check if there is space
+            
+            if (queue.size() >= 10) {
+                System.out.println("Car"+id+" left - queue full!");
+                return;
+            }
+            
             empty.waitSemaphore();
-            //lock queu
             mutex.waitSemaphore();
-            //add the car in the queu
+            
             queue.add(this);
-            System.out.println("Car"+id+" arrived and waiting");
-            //open queu
+            System.out.println("Car"+id+" entered queue. Position: " + queue.size());
+            
             mutex.signal();
-            //notify the car is ready to pump
             full.signal();
+            
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -83,30 +87,30 @@ class Pump extends Thread {
     public void run() {
         while (true) {
             try {
-                // waiting for a car
-               waitingCars.waitSemaphore(); 
-               // checking if the um is emty
-               availablePumps.waitSemaphore();
-               //lock queue
-               mutex.waitSemaphore();
+                waitingCars.waitSemaphore();
+                availablePumps.waitSemaphore();
+                mutex.waitSemaphore();
 
-               Car car = carQueue.poll();
-               System.out.println("Pump " + id + ": Car " + car.getCarId() + " begins service at Bay " + id);
-               
-               mutex.signal();
-               availableAreas.signal();
-               int serviceTime = (int)(Math.random() * 3000 + 2000); 
+                Car car = carQueue.poll();
+                System.out.println("Queue now has " + carQueue.size() + " cars waiting");
+                
+                System.out.println("Pump " + id + ": Car " + car.getCarId() + " begins service");
+                mutex.signal();
+                availableAreas.signal();
+                
+                int serviceTime = (int)(Math.random() * 3000 + 2000);
+                System.out.println("Pump " + id + ": Service time " + (serviceTime/1000) + "s");
                 Thread.sleep(serviceTime);
 
                 System.out.println("Pump " + id + ": Car " + car.getCarId() + " finishes service");
-                System.out.println("Pump " + id + ": Bay " + id + " is now free");
                 availablePumps.signal();
-                } catch (InterruptedException e) {
+                
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+        }
     }
 }
-    }
 
 
 class ServiceStation {
