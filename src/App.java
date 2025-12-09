@@ -9,6 +9,7 @@ class Semaphore {
         this.value = value;
     }
 
+
     public synchronized void waitSemaphore() {
         while (value == 0) {
             try {
