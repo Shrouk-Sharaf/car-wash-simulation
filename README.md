@@ -1,4 +1,4 @@
-# Car Wash Simulation - Producer-Consumer Problem
+# Car Wash Simulation
 
 This project implements a classic **Producer-Consumer Problem** in Java, simulating a busy Car Wash and Gas Station with synchronized resource management. The simulation models a service station with limited service bays and a fixed-size waiting area for vehicles.
 
